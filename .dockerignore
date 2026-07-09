@@ -1,0 +1,35 @@
+# Git & editor
+.git
+.gitignore
+.cursor
+**/.DS_Store
+
+# Python
+**/.venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+# Node
+**/node_modules
+frontend/dist
+
+# Local data & secrets
+storage/**
+!storage/.gitkeep
+.env
+.env.*
+!.env.example
+
+# Tests & docs (not needed in runtime images)
+tests
+frontend/tests
+docs
+*.md
+!backend/README.md
+
+# IDE / build artifacts
+**/*.tsbuildinfo
+**/coverage

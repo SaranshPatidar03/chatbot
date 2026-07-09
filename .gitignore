@@ -1,0 +1,73 @@
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+.npm
+.yarn/
+.pnpm-store/
+
+# Storage & data
+storage/uploads/**
+storage/temp/**
+!storage/uploads/.gitkeep
+!storage/temp/.gitkeep
+chroma_data/
+postgres_data/
+redis_data/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Docker
+*.log
+docker/certs/*
+!docker/certs/.gitkeep
+
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+tmp/
+temp/

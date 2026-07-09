@@ -1,0 +1,57 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 168 40% 97%;
+  --foreground: 175 50% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 175 50% 10%;
+  --primary: 173 80% 28%;
+  --primary-foreground: 160 60% 96%;
+  --secondary: 168 25% 90%;
+  --secondary-foreground: 175 40% 18%;
+  --muted: 168 20% 92%;
+  --muted-foreground: 175 12% 40%;
+  --accent: 36 90% 55%;
+  --accent-foreground: 30 50% 12%;
+  --border: 168 18% 84%;
+  --input: 168 18% 84%;
+  --ring: 173 80% 28%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 175 45% 7%;
+  --foreground: 160 30% 94%;
+  --card: 175 40% 10%;
+  --card-foreground: 160 30% 94%;
+  --primary: 166 70% 42%;
+  --primary-foreground: 175 50% 8%;
+  --secondary: 175 30% 16%;
+  --secondary-foreground: 160 25% 90%;
+  --muted: 175 28% 14%;
+  --muted-foreground: 168 12% 65%;
+  --accent: 36 85% 52%;
+  --accent-foreground: 30 40% 10%;
+  --border: 175 25% 18%;
+  --input: 175 25% 18%;
+  --ring: 166 70% 42%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% -10%, hsl(166 70% 42% / 0.18), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 0%, hsl(36 90% 55% / 0.12), transparent),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+  }
+}

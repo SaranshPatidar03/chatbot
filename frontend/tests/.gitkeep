@@ -1,0 +1,2 @@
+# Frontend tests run from `frontend/tests/` (Vitest).
+# Run: `cd frontend && npm test`
