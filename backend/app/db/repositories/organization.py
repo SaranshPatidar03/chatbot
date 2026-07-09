@@ -37,6 +37,16 @@ class OrganizationRepository(BaseRepository[Organization]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def membership_org_ids_for_user(self, user_id: str, org_ids: list[str]) -> set[str]:
+        if not org_ids:
+            return set()
+        stmt = select(OrganizationMember.organization_id).where(
+            OrganizationMember.user_id == user_id,
+            OrganizationMember.organization_id.in_(org_ids),
+        )
+        result = await self.session.execute(stmt)
+        return {str(row[0]) for row in result.all()}
+
     async def list_for_user(self, user_id: str) -> list[Organization]:
         stmt = (
             select(Organization)

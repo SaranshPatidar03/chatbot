@@ -51,3 +51,21 @@ class PasswordResetToken(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="password_reset_tokens")
+
+
+class EmailVerificationToken(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """One-time email verification token."""
+
+    __tablename__ = "email_verification_tokens"
+
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="email_verification_tokens")

@@ -46,3 +46,33 @@ export async function forgotPasswordRequest(payload: ForgotPasswordPayload): Pro
 export async function resetPasswordRequest(payload: ResetPasswordPayload): Promise<void> {
   await api.post("/auth/reset-password", payload);
 }
+
+export type UserSession = {
+  id: string;
+  user_agent: string | null;
+  ip_address: string | null;
+  created_at: string;
+  expires_at: string;
+  is_current: boolean;
+};
+
+export async function verifyEmailRequest(token: string): Promise<void> {
+  await api.post("/auth/verify-email", { token });
+}
+
+export async function resendVerificationRequest(): Promise<void> {
+  await api.post("/auth/resend-verification");
+}
+
+export async function fetchSessions(): Promise<{ items: UserSession[]; total: number }> {
+  const { data } = await api.get<{ items: UserSession[]; total: number }>("/auth/sessions");
+  return data;
+}
+
+export async function revokeSessionRequest(sessionId: string): Promise<void> {
+  await api.delete(`/auth/sessions/${sessionId}`);
+}
+
+export async function logoutAllDevicesRequest(): Promise<void> {
+  await api.post("/auth/logout-all");
+}

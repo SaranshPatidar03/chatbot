@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.session import PasswordResetToken, UserSession
+from app.db.models.session import EmailVerificationToken, PasswordResetToken, UserSession
 from app.db.repositories.base import BaseRepository
 
 
@@ -61,6 +61,24 @@ class PasswordResetRepository(BaseRepository[PasswordResetToken]):
         return result.scalar_one_or_none()
 
     async def mark_used(self, token: PasswordResetToken) -> PasswordResetToken:
+        token.used_at = datetime.now(UTC)
+        await self.session.flush()
+        await self.session.refresh(token)
+        return token
+
+
+class EmailVerificationRepository(BaseRepository[EmailVerificationToken]):
+    model = EmailVerificationToken
+
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(session)
+
+    async def get_by_token_hash(self, token_hash: str) -> EmailVerificationToken | None:
+        stmt = select(EmailVerificationToken).where(EmailVerificationToken.token_hash == token_hash)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def mark_used(self, token: EmailVerificationToken) -> EmailVerificationToken:
         token.used_at = datetime.now(UTC)
         await self.session.flush()
         await self.session.refresh(token)

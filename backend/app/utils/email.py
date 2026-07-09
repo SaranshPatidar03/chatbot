@@ -69,3 +69,32 @@ async def send_password_reset_email(
         body_html=body_html,
         settings=cfg,
     )
+
+
+async def send_verification_email(
+    *,
+    to_email: str,
+    verification_token: str,
+    settings: Settings | None = None,
+) -> None:
+    """Send email verification link to the user."""
+    cfg = settings or get_settings()
+    verify_url = f"{cfg.frontend_url.rstrip('/')}/verify-email?token={verification_token}"
+    subject = f"{cfg.app_name} — Verify your email"
+    body_text = (
+        f"Welcome to {cfg.app_name}.\n\n"
+        f"Verify your email address:\n{verify_url}\n\n"
+        "If you did not create this account, you can ignore this email."
+    )
+    body_html = f"""
+    <p>Welcome to <strong>{cfg.app_name}</strong>.</p>
+    <p><a href="{verify_url}">Verify your email address</a></p>
+    <p>If you did not create this account, you can ignore this email.</p>
+    """
+    await send_email(
+        to_email=to_email,
+        subject=subject,
+        body_text=body_text,
+        body_html=body_html,
+        settings=cfg,
+    )

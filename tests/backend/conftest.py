@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.ext.compiler import compiles
 
 from app.api.deps import get_db
+from app.core.config import get_settings
 from app.db import models  # noqa: F401 — register metadata
 from app.db.base import Base
 from app.embeddings.factory import clear_embedding_provider_cache
@@ -54,6 +55,16 @@ def mock_vector_indexing(monkeypatch):
     yield store
     clear_embedding_provider_cache()
     clear_llm_provider_cache()
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limit_in_tests(monkeypatch):
+    """Avoid Redis dependency during API integration tests."""
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "false")
+    monkeypatch.setenv("EMBEDDING_CACHE_ENABLED", "false")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest_asyncio.fixture

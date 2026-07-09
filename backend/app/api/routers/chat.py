@@ -13,6 +13,9 @@ from app.schemas.chat import (
     ChatListResponse,
     ChatResponse,
     ChatUpdateRequest,
+    ChatExportResponse,
+    ChatImportRequest,
+    ChatSearchResponse,
     MessageDeleteResponse,
     MessageListResponse,
     MessageResponse,
@@ -40,6 +43,20 @@ def _message_response(message) -> MessageResponse:
         model_provider=message.model_provider,
         model_name=message.model_name,
         created_at=message.created_at,
+    )
+
+
+@router.get("/search", response_model=ChatSearchResponse)
+async def search_chats(
+    q: str = Query(..., min_length=1, max_length=200),
+    limit: int = Query(20, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> ChatSearchResponse:
+    items = await ChatService(uow).search_chats(current_user, q, limit=limit)
+    return ChatSearchResponse(
+        items=[_chat_response(chat) for chat in items],
+        total=len(items),
     )
 
 
@@ -93,6 +110,34 @@ async def delete_chat(
 ) -> MessageDeleteResponse:
     await ChatService(uow).delete_chat(current_user, chat_id)
     return MessageDeleteResponse(message="Chat deleted.")
+
+
+@router.get("/{chat_id}/export", response_model=ChatExportResponse)
+async def export_chat(
+    chat_id: str,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> ChatExportResponse:
+    chat, messages = await ChatService(uow).export_chat(current_user, chat_id)
+    return ChatExportResponse(
+        chat=_chat_response(chat),
+        messages=[_message_response(message) for message in messages],
+    )
+
+
+@router.post("/import", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
+async def import_chat(
+    payload: ChatImportRequest,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> ChatResponse:
+    chat = await ChatService(uow).import_chat(
+        current_user,
+        title=payload.title,
+        messages=payload.messages,
+        organization_id=payload.organization_id,
+    )
+    return _chat_response(chat)
 
 
 @router.get("/{chat_id}/messages", response_model=MessageListResponse)

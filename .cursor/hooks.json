@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": "powershell -ExecutionPolicy Bypass -File .cursor/hooks/pack-zip.ps1",
+        "timeout": 120
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "powershell -ExecutionPolicy Bypass -File .cursor/hooks/pack-zip.ps1",
+        "matcher": "Write|StrReplace|EditNotebook",
+        "timeout": 120
+      }
+    ]
+  }
+}

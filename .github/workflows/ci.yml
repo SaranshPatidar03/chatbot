@@ -78,6 +78,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create temporary .env for Docker Compose
+        run: |
+          cp .env.example .env
+          # CI-only placeholders on the ephemeral runner — never committed to git.
+          sed -i \
+            -e 's/^SECRET_KEY=$/SECRET_KEY=ci-only-ephemeral-secret-key-for-compose-validation/' \
+            -e 's/^JWT_SECRET=$/JWT_SECRET=ci-only-ephemeral-secret-key-for-compose-validation/' \
+            -e 's/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=chatbot_secret/' \
+            .env
+
       - name: Validate Docker Compose files
         run: |
           docker compose --profile dev config

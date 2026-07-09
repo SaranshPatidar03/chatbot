@@ -103,6 +103,13 @@ class KnowledgeRetrieval:
 
         document_ids = list({hit.document_id for hit in hits if hit.document_id})
         documents = await self.uow.documents.get_by_ids(document_ids)
+        org_ids = list(
+            {doc.organization_id for doc in documents if doc.organization_id}
+        )
+        member_org_ids = await self.uow.organizations.membership_org_ids_for_user(
+            user.id,
+            org_ids,
+        )
         allowed_ids: set[str] = set()
 
         for document in documents:
@@ -111,12 +118,7 @@ class KnowledgeRetrieval:
             if document.owner_id == user.id:
                 allowed_ids.add(document.id)
                 continue
-            if document.organization_id:
-                membership = await self.uow.organizations.get_membership(
-                    document.organization_id,
-                    user.id,
-                )
-                if membership is not None:
-                    allowed_ids.add(document.id)
+            if document.organization_id and document.organization_id in member_org_ids:
+                allowed_ids.add(document.id)
 
         return [hit for hit in hits if hit.document_id in allowed_ids]

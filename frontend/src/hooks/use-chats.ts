@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createChat, deleteChat, fetchChats, fetchMessages } from "@/lib/chat-api";
+import { createChat, deleteChat, fetchChats, fetchMessages, updateChat } from "@/lib/chat-api";
 import { queryKeys } from "@/lib/query-keys";
 
 export function useChats() {
@@ -32,6 +32,24 @@ export function useDeleteChat() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (chatId: string) => deleteChat(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
+export function useUpdateChat() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      chatId,
+      ...payload
+    }: {
+      chatId: string;
+      title?: string;
+      is_pinned?: boolean;
+      is_archived?: boolean;
+    }) => updateChat(chatId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chats });
     },

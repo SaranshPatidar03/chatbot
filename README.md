@@ -63,6 +63,13 @@ make up
 # or: docker compose --profile dev up -d --build
 ```
 
+**Pack a shareable source zip (excludes secrets, `node_modules`, `.venv`):**
+
+```bash
+make zip
+# creates ./chatbot.zip — also auto-refreshed by Cursor hooks after agent edits
+```
+
 **Production-like stack (nginx on :80, static frontend, API workers):**
 
 ```bash
@@ -114,9 +121,14 @@ All settings are documented in [`.env.example`](.env.example). Key variables:
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Installation](docs/INSTALL.md)
 - [API overview](docs/API.md)
 - [Deployment guide](docs/DEPLOYMENT.md)
 - [Operations runbook](docs/RUNBOOK.md)
+- [Security](docs/SECURITY.md)
+- [Contributing](docs/CONTRIBUTING.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Changelog](docs/CHANGELOG.md)
 
 ## Development phases
 

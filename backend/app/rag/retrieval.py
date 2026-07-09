@@ -5,11 +5,12 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from app.core.config import Settings, get_settings
+from app.core.embedding_cache import get_cached_query_embedding, set_cached_query_embedding
 from app.embeddings.factory import get_embedding_provider
 from app.embeddings.protocol import EmbeddingProvider
 from app.embeddings.store import VectorSearchHit, VectorStore
 from app.rag.citations import RetrievedChunk
-from app.rag.hybrid import distance_to_similarity, fuse_hybrid_results, keyword_overlap_score
+from app.rag.hybrid import bm25_score, distance_to_similarity, fuse_hybrid_results, keyword_overlap_score
 from app.rag.mmr import maximal_marginal_relevance
 
 SearchMode = Literal["semantic", "keyword", "hybrid"]
@@ -66,7 +67,18 @@ class RetrievalEngine:
 
         query_embedding: list[float] | None = None
         if mode in {"semantic", "hybrid"}:
-            query_embedding = await provider.embed_query(query, model=embedding_model)
+            provider_name = getattr(provider, "name", "default")
+            cached = await get_cached_query_embedding(provider_name, embedding_model, query)
+            if cached is not None:
+                query_embedding = cached
+            else:
+                query_embedding = await provider.embed_query(query, model=embedding_model)
+                await set_cached_query_embedding(
+                    provider_name,
+                    embedding_model,
+                    query,
+                    query_embedding,
+                )
 
         for collection_name in collection_names:
             if mode in {"semantic", "hybrid"} and query_embedding is not None:
@@ -122,7 +134,9 @@ class RetrievalEngine:
             parsed_page = int(page_number)
 
         semantic_score = distance_to_similarity(hit.distance) if mode == "semantic" else 0.0
-        keyword_score = keyword_overlap_score(query, hit.content) if mode == "keyword" else 0.0
+        keyword_score = (
+            bm25_score(query, hit.content) if mode == "keyword" else 0.0
+        )
         score = semantic_score if mode == "semantic" else keyword_score
 
         return RetrievedChunk(

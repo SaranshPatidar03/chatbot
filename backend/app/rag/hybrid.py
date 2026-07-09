@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 
 from app.rag.citations import RetrievedChunk
 
@@ -17,6 +19,38 @@ def keyword_overlap_score(query: str, text: str) -> float:
         return 0.0
     overlap = len(query_terms & text_terms)
     return overlap / len(query_terms)
+
+
+def bm25_score(
+    query: str,
+    text: str,
+    *,
+    avg_doc_len: float = 500.0,
+    k1: float = 1.5,
+    b: float = 0.75,
+) -> float:
+    """Lightweight BM25-style relevance score normalized to ``[0, 1]``."""
+    query_terms = [term for term in _tokenize(query) if len(term) > 1]
+    doc_terms = _tokenize(text)
+    if not query_terms or not doc_terms:
+        return 0.0
+
+    doc_len = len(doc_terms)
+    term_freq = Counter(doc_terms)
+    unique_query = set(query_terms)
+    raw = 0.0
+
+    for term in unique_query:
+        tf = term_freq.get(term, 0)
+        if tf == 0:
+            continue
+        idf = math.log(1.0 + (1.0 + avg_doc_len) / (1.0 + tf))
+        denom = tf + k1 * (1.0 - b + b * (doc_len / avg_doc_len))
+        raw += idf * ((tf * (k1 + 1)) / denom)
+
+    if raw <= 0:
+        return 0.0
+    return min(raw / len(unique_query), 1.0)
 
 
 def distance_to_similarity(distance: float | None) -> float:

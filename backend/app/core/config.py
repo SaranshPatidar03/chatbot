@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,8 +34,10 @@ class Settings(BaseSettings):
     )
     secret_key: str = Field(
         default="change-me-to-a-long-random-secret-in-production",
-        alias="SECRET_KEY",
+        validation_alias="SECRET_KEY",
+        serialization_alias="SECRET_KEY",
     )
+    jwt_secret: str | None = Field(default=None, alias="JWT_SECRET")
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
@@ -115,10 +117,27 @@ class Settings(BaseSettings):
     password_reset_token_expire_minutes: int = Field(
         default=60, alias="PASSWORD_RESET_TOKEN_EXPIRE_MINUTES"
     )
+    email_verification_token_expire_minutes: int = Field(
+        default=1440, alias="EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES"
+    )
+    require_email_verification: bool = Field(
+        default=False, alias="REQUIRE_EMAIL_VERIFICATION"
+    )
 
     # Rate limiting
+    rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
     rate_limit_requests: int = Field(default=100, alias="RATE_LIMIT_REQUESTS")
     rate_limit_window_seconds: int = Field(default=60, alias="RATE_LIMIT_WINDOW_SECONDS")
+    auth_rate_limit_requests: int = Field(default=20, alias="AUTH_RATE_LIMIT_REQUESTS")
+
+    # API docs & observability
+    enable_api_docs: bool = Field(default=True, alias="ENABLE_API_DOCS")
+    metrics_require_auth: bool = Field(default=False, alias="METRICS_REQUIRE_AUTH")
+    metrics_scrape_token: str = Field(default="", alias="METRICS_SCRAPE_TOKEN")
+
+    # Embedding cache
+    embedding_cache_enabled: bool = Field(default=True, alias="EMBEDDING_CACHE_ENABLED")
+    embedding_cache_ttl_seconds: int = Field(default=3600, alias="EMBEDDING_CACHE_TTL_SECONDS")
 
     # OCR
     tesseract_cmd: str = Field(default="tesseract", alias="TESSERACT_CMD")
@@ -130,6 +149,33 @@ class Settings(BaseSettings):
     @classmethod
     def strip_cors(cls, value: str) -> str:
         return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def merge_jwt_secret(self) -> "Settings":
+        if self.jwt_secret and self.jwt_secret.strip():
+            self.secret_key = self.jwt_secret.strip()
+        return self
+
+    def validate_production(self) -> None:
+        """Raise if critical production settings are unsafe."""
+        if self.app_env != "production":
+            return
+        insecure_default = "change-me-to-a-long-random-secret-in-production"
+        if self.secret_key == insecure_default or len(self.secret_key) < 32:
+            raise ValueError(
+                "SECRET_KEY (or JWT_SECRET) must be a strong random value (32+ chars) in production."
+            )
+        if self.app_debug:
+            raise ValueError("APP_DEBUG must be false in production.")
+        if self.default_llm_provider == "openai" and not self.openai_api_key.strip():
+            raise ValueError("OPENAI_API_KEY is required when DEFAULT_LLM_PROVIDER=openai.")
+
+    @property
+    def expose_api_docs(self) -> bool:
+        """OpenAPI/Swagger UI is off in production unless ``ENABLE_API_DOCS=true``."""
+        if self.app_env != "production":
+            return True
+        return self.enable_api_docs
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -166,4 +212,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Return cached application settings."""
-    return Settings()
+    settings = Settings()
+    settings.validate_production()
+    return settings

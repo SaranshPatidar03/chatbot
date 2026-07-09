@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from app.db.models.chat import Chat
     from app.db.models.document import Document
     from app.db.models.organization import OrganizationMember
-    from app.db.models.session import PasswordResetToken, UserSession
+    from app.db.models.session import EmailVerificationToken, PasswordResetToken, UserSession
     from app.db.models.settings import UserSettings
 
 
@@ -56,6 +56,10 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     password_reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    email_verification_tokens: Mapped[list["EmailVerificationToken"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

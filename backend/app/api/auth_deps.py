@@ -1,5 +1,7 @@
 """Authentication dependencies for FastAPI routes."""
 
+from datetime import UTC, datetime
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
@@ -55,6 +57,23 @@ async def get_current_user(
             detail="User account is unavailable.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    session_id = payload.get("sid")
+    if session_id:
+        session = await uow.sessions.get_by_id(str(session_id))
+        expires_at = session.expires_at if session else None
+        if (
+            not session
+            or session.user_id != str(user_id)
+            or session.is_revoked
+            or (expires_at is not None and expires_at.replace(tzinfo=UTC) <= datetime.now(UTC))
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session has been revoked or expired.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     return user
 
 

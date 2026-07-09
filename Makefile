@@ -1,4 +1,4 @@
-.PHONY: help install-backend install-frontend install up up-prod up-prod-tls down logs migrate migrate-docker docker-config tls-certs test test-backend test-frontend test-e2e health ready smoke smoke-prod
+.PHONY: help install-backend install-frontend install up up-prod up-prod-tls down logs migrate migrate-docker docker-config tls-certs test test-backend test-frontend test-e2e health ready smoke smoke-prod zip
 
 help:
 	@echo "Knowledge Chatbot — common targets"
@@ -18,6 +18,7 @@ help:
 	@echo "  make test-backend     Run backend tests only"
 	@echo "  make test-frontend    Run frontend tests only"
 	@echo "  make test-e2e         Run Playwright E2E tests"
+	@echo "  make zip              Pack project into chatbot.zip"
 	@echo "  make health           Hit API health endpoint"
 	@echo "  make ready            Hit API readiness endpoint"
 	@echo "  make smoke            Health + readiness (dev API :8000)"
@@ -84,3 +85,6 @@ smoke: health ready
 smoke-prod:
 	curl -fsS http://localhost/api/v1/health
 	curl -fsS http://localhost/ready
+
+zip:
+	powershell -ExecutionPolicy Bypass -File scripts/pack-chatbot-zip.ps1 -Force

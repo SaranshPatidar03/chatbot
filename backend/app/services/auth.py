@@ -20,7 +20,7 @@ from app.core.security import (
 )
 from app.core.deps import UnitOfWork
 from app.db.enums import AnalyticsEventType, PlatformRole
-from app.db.models.session import PasswordResetToken, UserSession
+from app.db.models.session import EmailVerificationToken, PasswordResetToken, UserSession
 from app.db.models.user import User
 from app.schemas.auth import (
     AuthResponse,
@@ -32,8 +32,11 @@ from app.schemas.auth import (
     TokenResponse,
     UserPublic,
     UserUpdateRequest,
+    VerifyEmailRequest,
+    SessionItem,
+    SessionListResponse,
 )
-from app.utils.email import send_password_reset_email
+from app.utils.email import send_password_reset_email, send_verification_email
 
 logger = get_logger(__name__)
 
@@ -147,6 +150,7 @@ class AuthService:
         )
 
         logger.info("user_signup", user_id=user.id, email=email)
+        await self._send_verification_email(user)
         return await self._auth_response(user, user_agent=user_agent, ip_address=ip_address)
 
     async def login(
@@ -167,6 +171,11 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This account has been deactivated.",
+            )
+        if self.settings.require_email_verification and not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Please verify your email before signing in.",
             )
 
         user.last_login_at = _utc_now()
@@ -332,3 +341,80 @@ class AuthService:
         await self.uow.session.flush()
         await self.uow.session.refresh(user)
         return self._user_public(user)
+
+    async def _send_verification_email(self, user: User) -> None:
+        if user.is_verified:
+            return
+        raw_token = generate_opaque_token()
+        expires_at = _utc_now() + timedelta(
+            minutes=self.settings.email_verification_token_expire_minutes,
+        )
+        token = EmailVerificationToken(
+            user_id=user.id,
+            token_hash=hash_token(raw_token),
+            expires_at=expires_at,
+        )
+        await self.uow.email_verifications.add(token)
+        try:
+            await send_verification_email(to_email=user.email, verification_token=raw_token)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("verification_email_failed", user_id=user.id, error=str(exc))
+
+    async def verify_email(self, payload: VerifyEmailRequest) -> MessageResponse:
+        token_hash = hash_token(payload.token)
+        record = await self.uow.email_verifications.get_by_token_hash(token_hash)
+        if (
+            not record
+            or record.used_at is not None
+            or _as_utc(record.expires_at) <= _utc_now()
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired verification token.",
+            )
+
+        user = await self.uow.users.get_by_id(record.user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired verification token.",
+            )
+
+        user.is_verified = True
+        await self.uow.email_verifications.mark_used(record)
+        await self.uow.session.flush()
+        await self.uow.audit_logs.record(actor_id=user.id, action="auth.email_verified")
+        return MessageResponse(message="Email verified successfully.")
+
+    async def resend_verification(self, user: User) -> MessageResponse:
+        if user.is_verified:
+            return MessageResponse(message="Email is already verified.")
+        await self._send_verification_email(user)
+        return MessageResponse(message="Verification email sent.")
+
+    async def list_sessions(self, user: User, *, current_session_id: str | None) -> SessionListResponse:
+        sessions = await self.uow.sessions.list_active_for_user(user.id)
+        items = [
+            SessionItem(
+                id=session.id,
+                user_agent=session.user_agent,
+                ip_address=session.ip_address,
+                created_at=session.created_at,
+                expires_at=session.expires_at,
+                is_current=session.id == current_session_id,
+            )
+            for session in sessions
+        ]
+        return SessionListResponse(items=items, total=len(items))
+
+    async def revoke_session(self, user: User, session_id: str) -> MessageResponse:
+        session = await self.uow.sessions.get_by_id(session_id)
+        if not session or session.user_id != user.id or session.is_revoked:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+        await self.uow.sessions.revoke(session)
+        return MessageResponse(message="Session revoked.")
+
+    async def logout_all_devices(self, user: User) -> MessageResponse:
+        await self.uow.sessions.revoke_all_for_user(user.id)
+        await self.uow.audit_logs.record(actor_id=user.id, action="auth.logout_all")
+        return MessageResponse(message="Logged out from all devices.")

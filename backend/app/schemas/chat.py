@@ -72,3 +72,20 @@ class SendMessageRequest(BaseModel):
 
 class MessageDeleteResponse(BaseModel):
     message: str
+
+
+class ChatExportResponse(BaseModel):
+    version: int = 1
+    chat: ChatResponse
+    messages: list[MessageResponse]
+
+
+class ChatImportRequest(BaseModel):
+    title: str | None = Field(default=None, max_length=255)
+    messages: list[dict[str, Any]] = Field(default_factory=list)
+    organization_id: str | None = None
+
+
+class ChatSearchResponse(BaseModel):
+    items: list[ChatResponse]
+    total: int

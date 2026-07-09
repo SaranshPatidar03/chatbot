@@ -212,6 +212,26 @@ Requires Bearer authentication. Preferences apply to chat generation, retrieval,
 
 `allow_general_knowledge` can only be enabled when the platform sets `RAG_ALLOW_GENERAL_KNOWLEDGE=true`.
 
+## Auth extensions (Enterprise)
+
+- `POST /auth/verify-email` — body: `{ "token": "..." }`
+- `POST /auth/resend-verification` — requires Bearer token
+- `GET /auth/sessions` — list active refresh sessions
+- `DELETE /auth/sessions/{session_id}` — revoke a single session
+- `POST /auth/logout-all` — revoke all sessions for the current user
+
+Set `REQUIRE_EMAIL_VERIFICATION=true` to block login until verified.
+
+## Chat extensions (Enterprise)
+
+- `GET /chats/search?q=` — search chat titles
+- `GET /chats/{id}/export` — export chat + messages as JSON
+- `POST /chats/import` — import a previously exported chat
+
+## Documents (Enterprise)
+
+- `POST /documents/{id}/reindex` — re-queue ingestion and vector indexing
+
 ## Dashboard (Phase 14)
 
 - `GET /dashboard/summary` — document/chat counts, storage bytes, processing queue size, recent activity

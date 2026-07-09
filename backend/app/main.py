@@ -12,6 +12,8 @@ from app.api.routers import metrics as metrics_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RequestContextMiddleware
+from app.core.rate_limit_middleware import RateLimitMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.redis import close_redis
 from app.utils.files import ensure_storage_dirs
 
@@ -48,12 +50,14 @@ def create_app() -> FastAPI:
             "user-provided knowledge base unless general knowledge is explicitly enabled."
         ),
         lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url="/docs" if settings.expose_api_docs else None,
+        redoc_url="/redoc" if settings.expose_api_docs else None,
+        openapi_url="/openapi.json" if settings.expose_api_docs else None,
     )
 
+    application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(RequestContextMiddleware)
+    application.add_middleware(RateLimitMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

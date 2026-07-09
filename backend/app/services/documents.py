@@ -147,6 +147,23 @@ class DocumentService:
             resource_id=document.id,
         )
 
+    async def reindex_document(self, user: User, document_id: str) -> Document:
+        document = await self._get_manageable_document(user, document_id)
+        if document.status == DocumentStatus.DELETED.value:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Document is deleted.")
+        document.status = DocumentStatus.PENDING.value
+        document.error_message = None
+        await self.uow.session.flush()
+        await self._schedule_ingest(document.id)
+        await self.uow.session.refresh(document)
+        await self.uow.audit_logs.record(
+            actor_id=user.id,
+            action="document.reindex",
+            resource_type="document",
+            resource_id=document.id,
+        )
+        return document
+
     async def _create_from_bytes(
         self,
         *,

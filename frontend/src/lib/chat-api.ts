@@ -36,6 +36,45 @@ export async function deleteChat(chatId: string): Promise<void> {
   if (!response.ok) throw new Error("Failed to delete chat");
 }
 
+export async function updateChat(
+  chatId: string,
+  payload: { title?: string; is_pinned?: boolean; is_archived?: boolean },
+): Promise<Chat> {
+  const response = await fetch(`${apiBase}/chats/${chatId}`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error("Failed to update chat");
+  return response.json();
+}
+
+export async function exportChat(chatId: string): Promise<Blob> {
+  const response = await fetch(`${apiBase}/chats/${chatId}/export`, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Failed to export chat");
+  const data = await response.json();
+  return new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+}
+
+export async function importChat(file: File): Promise<Chat> {
+  const text = await file.text();
+  const payload = JSON.parse(text) as {
+    title?: string;
+    messages?: Array<{ role: string; content: string; citations?: unknown[] }>;
+    chat?: { title?: string };
+  };
+  const response = await fetch(`${apiBase}/chats/import`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      title: payload.title ?? payload.chat?.title,
+      messages: payload.messages ?? [],
+    }),
+  });
+  if (!response.ok) throw new Error("Failed to import chat");
+  return response.json();
+}
+
 export async function fetchMessages(chatId: string): Promise<MessageListResponse> {
   const response = await fetch(`${apiBase}/chats/${chatId}/messages`, { headers: authHeaders() });
   if (!response.ok) throw new Error("Failed to load messages");

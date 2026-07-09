@@ -77,6 +77,45 @@ class ChatService:
         chat = await self._get_owned_chat(user, chat_id)
         await self.uow.chats.delete(chat)
 
+    async def search_chats(self, user: User, query: str, *, limit: int = 20) -> list[Chat]:
+        return await self.uow.chats.search_for_user(user.id, query, limit=limit)
+
+    async def export_chat(self, user: User, chat_id: str) -> tuple[Chat, list[Message]]:
+        chat = await self._get_owned_chat(user, chat_id)
+        messages, _ = await self.list_messages(user, chat_id, page=1, page_size=500)
+        return chat, messages
+
+    async def import_chat(
+        self,
+        user: User,
+        *,
+        title: str | None,
+        messages: list[dict],
+        organization_id: str | None = None,
+    ) -> Chat:
+        chat = await self.create_chat(
+            user,
+            title=title or "Imported chat",
+            organization_id=organization_id,
+        )
+        for item in messages:
+            role = str(item.get("role", "user"))
+            content = str(item.get("content", "")).strip()
+            if not content:
+                continue
+            if role not in {MessageRole.USER.value, MessageRole.ASSISTANT.value}:
+                continue
+            message = Message(
+                chat_id=chat.id,
+                role=role,
+                content=content,
+                citations=item.get("citations") if role == MessageRole.ASSISTANT.value else None,
+            )
+            await self.uow.messages.add(message)
+        await self.uow.session.flush()
+        await self.uow.session.refresh(chat)
+        return chat
+
     async def list_messages(
         self,
         user: User,

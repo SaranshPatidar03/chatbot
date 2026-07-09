@@ -13,6 +13,7 @@ from app.db.repositories import (
     ChatRepository,
     DocumentChunkRepository,
     DocumentRepository,
+    EmailVerificationRepository,
     MessageRepository,
     OrganizationRepository,
     PasswordResetRepository,
@@ -37,6 +38,7 @@ class UnitOfWork:
     organizations: OrganizationRepository
     sessions: SessionRepository
     password_resets: PasswordResetRepository
+    email_verifications: EmailVerificationRepository
     documents: DocumentRepository
     chunks: DocumentChunkRepository
     chats: ChatRepository
@@ -54,6 +56,7 @@ def build_uow(session: AsyncSession) -> UnitOfWork:
         organizations=OrganizationRepository(session),
         sessions=SessionRepository(session),
         password_resets=PasswordResetRepository(session),
+        email_verifications=EmailVerificationRepository(session),
         documents=DocumentRepository(session),
         chunks=DocumentChunkRepository(session),
         chats=ChatRepository(session),

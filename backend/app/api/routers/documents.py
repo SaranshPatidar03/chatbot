@@ -121,3 +121,14 @@ async def delete_document(
 ) -> MessageResponse:
     await DocumentService(uow).delete_document(current_user, document_id)
     return MessageResponse(message="Document deleted.")
+
+
+@router.post("/{document_id}/reindex", response_model=DocumentResponse)
+async def reindex_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> DocumentResponse:
+    """Re-queue document ingestion and vector indexing."""
+    document = await DocumentService(uow).reindex_document(current_user, document_id)
+    return DocumentResponse.model_validate(document)

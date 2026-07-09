@@ -10,6 +10,7 @@ import { ForgotPasswordPage } from "@/features/auth/forgot-password-page";
 import { LoginPage } from "@/features/auth/login-page";
 import { ResetPasswordPage } from "@/features/auth/reset-password-page";
 import { SignupPage } from "@/features/auth/signup-page";
+import { VerifyEmailPage } from "@/features/auth/verify-email-page";
 import { ChatPage } from "@/features/chat/chat-page";
 import { DashboardPage } from "@/features/dashboard/dashboard-page";
 import { LandingPage } from "@/features/dashboard/landing-page";
@@ -35,6 +36,7 @@ function AppRoutes() {
           <Route path="signup" element={<SignupPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="verify-email" element={<VerifyEmailPage />} />
         </Route>
       </Route>
 

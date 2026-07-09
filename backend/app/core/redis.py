@@ -11,7 +11,12 @@ from app.core.config import get_settings
 def get_redis() -> Redis:
     """Return a process-wide async Redis client."""
     settings = get_settings()
-    return Redis.from_url(settings.redis_url, decode_responses=True)
+    return Redis.from_url(
+        settings.redis_url,
+        decode_responses=True,
+        socket_connect_timeout=2,
+        socket_timeout=2,
+    )
 
 
 async def close_redis() -> None:

@@ -1,6 +1,7 @@
 """Pydantic schemas for authentication endpoints."""
 
 from pydantic import BaseModel, EmailStr, Field
+from datetime import datetime
 
 
 class SignupRequest(BaseModel):
@@ -60,3 +61,23 @@ class AuthResponse(TokenResponse):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(min_length=16, max_length=512)
+
+
+class SessionItem(BaseModel):
+    id: str
+    user_agent: str | None
+    ip_address: str | None
+    created_at: datetime
+    expires_at: datetime
+    is_current: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class SessionListResponse(BaseModel):
+    items: list[SessionItem]
+    total: int

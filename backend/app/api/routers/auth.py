@@ -17,6 +17,8 @@ from app.schemas.auth import (
     TokenResponse,
     UserPublic,
     UserUpdateRequest,
+    VerifyEmailRequest,
+    SessionListResponse,
 )
 from app.services.auth import AuthService
 
@@ -108,3 +110,45 @@ async def update_me(
     uow: UnitOfWork = Depends(get_uow),
 ) -> UserPublic:
     return await AuthService(uow).update_profile(current_user, payload)
+
+
+@router.post("/verify-email", response_model=MessageResponse)
+async def verify_email(
+    payload: VerifyEmailRequest,
+    uow: UnitOfWork = Depends(get_uow),
+) -> MessageResponse:
+    return await AuthService(uow).verify_email(payload)
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+async def resend_verification(
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> MessageResponse:
+    return await AuthService(uow).resend_verification(current_user)
+
+
+@router.get("/sessions", response_model=SessionListResponse)
+async def list_sessions(
+    current_user: User = Depends(get_current_user),
+    session_id: str | None = Depends(get_current_session_id),
+    uow: UnitOfWork = Depends(get_uow),
+) -> SessionListResponse:
+    return await AuthService(uow).list_sessions(current_user, current_session_id=session_id)
+
+
+@router.delete("/sessions/{session_id}", response_model=MessageResponse)
+async def revoke_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> MessageResponse:
+    return await AuthService(uow).revoke_session(current_user, session_id)
+
+
+@router.post("/logout-all", response_model=MessageResponse)
+async def logout_all_devices(
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> MessageResponse:
+    return await AuthService(uow).logout_all_devices(current_user)
