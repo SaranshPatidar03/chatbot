@@ -5,8 +5,9 @@ Revises: 20260708_phase2_initial_schema
 Create Date: 2026-07-09
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision = "20260709_email_verification"
 down_revision = "20260708_phase2"
@@ -17,8 +18,8 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "email_verification_tokens",
-        sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("user_id", sa.String(length=36), nullable=False),
+        sa.Column("id", postgresql.UUID(as_uuid=False), nullable=False),
+        sa.Column("user_id", postgresql.UUID(as_uuid=False), nullable=False),
         sa.Column("token_hash", sa.String(length=255), nullable=False),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
